@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1>个人信息：{{ user_info.User.NickName }}</h1>
+    <ul>
+        {% for user in user_info.ContactList %}
+            <li>{{ user.NickName }}</li>
+        {% endfor %}
+    </ul>
+    <a href="/wechat/contact_all">查看更多联系人</a>
+    <h3>公众号信息</h3>
+    {% for msg in user_info.MPSubscribeMsgList %}
+    <div>
+        <h3>{{ msg.NickName }}</h3>
+        <ul>
+            {% for article in msg.MPArticleList %}
+                <li><a href="{{ article.Url }}">{{ article.Title }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</body>
+
+</html>

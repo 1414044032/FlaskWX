@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>Document</title>
+  <link rel="stylesheet" type="text/css" href="/static/layui/css/layui.css">
+  <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+<style>
+  #xcode{
+    border:5px solid #cccccc;
+    width: 200px;
+    height: 200px;
+    margin: 70px 0 0 70px;
+  }
+  .logoimg{
+    width: 100px;
+    height: 80px;
+  }
+  .funczone{
+    height: 460px;
+  }
+  .wxstatus{
+    height: 100%;
+    border-right: 1px solid #cccccc;
+  }
+  .showstus{
+    padding: 20px 0 0 150px;
+    color: mediumblue;
+  }
+
+</style>
+<![endif]-->
+</head>
+<body>
+  <div class="header">
+    <div class="menu-btn">
+      <div class="menu"></div>
+    </div>
+    <h1 class="logo">
+      <a href="index.html">
+        <span>MYBLOG</span>
+        <img  class="logoimg" src="/static/img/logo1.png">
+      </a>
+    </h1>
+    <div class="nav">
+      <!--<a href="index.html" class="active">Flask微信</a>-->
+    </div>
+    <p class="welcome-text">
+      <!--<input type="file" id="file_input">-->
+    </p>
+  </div>
+
+  <div class="layui-row funczone">
+     <div class="layui-col-md3 wxstatus">
+       <div class="wximg"><img id="xcode"  src="https://login.weixin.qq.com/qrcode/{{ xcode }}"></div>
+       <div class="showstus"><h3>请扫码</h3></div>
+     </div>
+    <div class="layui-col-md9 wxfunc">
+        <div class="layui-col-md4 chat">
+        1
+    </div>
+      <div class="layui-col-md4 ">
+        2
+    </div>
+      <div class="layui-col-md4 headwall">
+        3
+    </div>
+    </div>
+  </div>
+  <div class="footer-wrap">
+    <div class="footer w1000">
+      <div class="qrcode">
+        <img src="/static/img/erweima.jpg">
+      </div>
+      <div class="practice-mode">
+        <img src="/static/img/down_img.jpg">
+        <div class="text">
+          <h4 class="title">我的联系方式</h4>
+          <p>邮箱<span class="email">1414044032@qq.com</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript" src="/static/js/jquery-3.3.1.min.js"></script>
+  <script type="text/javascript" src="/static/layui/layui.js"></script>
+  <script>
+        // 登录标志
+        var tip = 1;
+        function checkLogin() {
+            $.ajax({
+                url:'/wechat/check_login',
+                data: {'tip': tip},
+                type: 'GET',
+                dataType: 'JSON',
+                success:function (arg) {
+                    if (arg.code == 201){
+                        // 有人扫码了
+                        $('#xcode').attr('src', arg.data);
+                        $(".showstus>h3").text("已扫码，请在手机上点击登录");
+                        $(".showstus").css("padding","12px 0 0 69px");
+                        checkLogin();
+                        tip = 0;
+                    }else if (arg.code == 408){
+                        checkLogin();
+                    }else if (arg.code == 200){
+                        $(".showstus>h3").text("已登录");
+                        $(".showstus").css("padding","20px 0 0 150px");
+                    }
+                }
+            })
+        }
+        function get_linkman() {
+            $.ajax({
+                url:'/wechat/contact_all',
+                type: 'GET',
+                success:function (arg) {
+                    console.log(arg)
+                }
+            })
+        }
+        // 检查登录状态
+        checkLogin();
+  </script>
+</body>
+</html>

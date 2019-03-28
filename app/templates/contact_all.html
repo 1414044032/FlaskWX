@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<div>
+    <h1>联系人列表</h1>
+    <ul>
+        {% for item in contact_dict.MemberList %}
+            <li>{{ item.UserName|safe }} --- {{ item.NickName|safe }}</li>
+        {% endfor %}
+    </ul>
+</div>
+<div>
+    <h1>发送消息</h1>
+    <p>接受者：<input type="text" id="recv" /></p>
+    <p>内容：<input type="text" id="content" /></p>
+    <input type="button" id="btn" value="Send" />
+</div>
+</body>
+<script type="text/javascript" src="/static/js/jquery-3.3.1.min.js"></script>
+<script type="text/javascript">
+    $(function() {
+        $('#btn').click(function() {
+            var recv = $('#recv').val();
+            var content = $('#content').val();
+            $.ajax({
+                url: '/wechat/send_msg',
+                type: 'GET',
+                data: {'recv': recv, 'content': content},
+                success: function(arg) {
+                    console.log(arg)
+                }
+            })
+        })
+    })
+</script>
+</html>
