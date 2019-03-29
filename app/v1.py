@@ -5,6 +5,7 @@ import requests
 import re
 from bs4 import BeautifulSoup
 import json
+import collections
 wxchart = Blueprint('v1', __name__)
 
 
@@ -106,15 +107,21 @@ def contact_all():
     r1 = requests.get(url, cookies=all_cookies)
     r1.encoding = r1.apparent_encoding
     contact_dict = json.loads(r1.content)
-    print(contact_dict)
+
     # 获取联系人过滤公众号
     remark_name_list = [item['RemarkName'] for item in contact_dict['MemberList'] if item['RemarkName']]
     # 获取地区列表
     area_list = [item['Province'] for item in contact_dict['MemberList'] if item['RemarkName'] and item['Province']]
+    area_dict = collections.Counter(area_list)
+    area_data1 = [i for i in area_dict.keys()]
+    area_data2 = [i for i in area_dict.values()]
     # 个性签名列表
-    signature_list = [item['Signature'] for item in contact_dict['MemberList'] if item['RemarkName'] and item['Signature']]
-    print(signature_list)
-    return jsonify({"entity": remark_name_list})
+    signature_dict = {item['RemarkName']: item['Signature'] for item in contact_dict['MemberList'] if item['RemarkName'] and item['Signature']}
+
+    return jsonify({"remark_name_list": remark_name_list
+                    ,"area_data1": area_data1
+                    ,"area_data2": area_data2
+                    ,"signature_list": signature_dict})
 
 
 @wxchart.route('/send_msg')

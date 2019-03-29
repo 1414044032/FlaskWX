@@ -6,6 +6,7 @@
   <title>Document</title>
   <link rel="stylesheet" type="text/css" href="/static/layui/css/layui.css">
   <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/4.2.1/echarts-en.common.js"></script>
 <style>
   #xcode{
     border:5px solid #cccccc;
@@ -21,14 +22,25 @@
     height: 460px;
   }
   .wxstatus{
-    height: 100%;
+    height: 80%;
     border-right: 1px solid #cccccc;
+    border-bottom: 1px solid #cccccc;
   }
   .showstus{
     padding: 20px 0 0 150px;
     color: mediumblue;
   }
-
+  /*个性签名居中*/
+  div[carousel-item]>*:nth-child(2n+1) {
+    background-color: #5FB878;
+  }
+  div[carousel-item]>*:nth-child(2n) {
+    background-color: #009688;
+  }
+  .signature div{
+    text-align: center;
+    line-height:280px;
+  }
 </style>
 <![endif]-->
 </head>
@@ -57,18 +69,30 @@
        <div class="showstus"><h3>请扫码</h3></div>
      </div>
     <div class="layui-col-md9 wxfunc">
-        <div class="layui-col-md4 chat">
-        1
+      <div class="layui-row">
+        <div class="layui-col-md6 headwall">
+        头像墙
     </div>
-      <div class="layui-col-md4 ">
-        2
+      <div class="layui-col-md6 area">
+        地区分布
+        <div id="areashow" style="width: 553px; height: 476px;"></div>
     </div>
-      <div class="layui-col-md4 headwall">
-        3
-    </div>
+      </div>
     </div>
   </div>
-  <div class="footer-wrap">
+  <div class="layui-row">
+      <div class="layui-col-md4 sign">
+        <h2>个性签名</h2>
+        <div class="layui-carousel" id="test1">
+              <div carousel-item class="signature">
+              </div>
+            </div>
+    </div>
+        <div class="layui-col-md4">
+        发送消息
+    </div>
+    </div>
+  <!--<div class="footer-wrap">
     <div class="footer w1000">
       <div class="qrcode">
         <img src="/static/img/erweima.jpg">
@@ -81,7 +105,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </div>-->
 
   <script type="text/javascript" src="/static/js/jquery-3.3.1.min.js"></script>
   <script type="text/javascript" src="/static/layui/layui.js"></script>
@@ -98,15 +122,14 @@
                     if (arg.code == 201){
                         // 有人扫码了
                         $('#xcode').attr('src', arg.data);
-                        $(".showstus>h3").text("已扫码，请在手机上点击登录");
-                        $(".showstus").css("padding","12px 0 0 69px");
+                        $(".showstus>h3").text("已扫码");
                         checkLogin();
                         tip = 0;
                     }else if (arg.code == 408){
                         checkLogin();
                     }else if (arg.code == 200){
                         $(".showstus>h3").text("已登录");
-                        $(".showstus").css("padding","20px 0 0 150px");
+                        get_linkman()
                     }
                 }
             })
@@ -116,12 +139,57 @@
                 url:'/wechat/contact_all',
                 type: 'GET',
                 success:function (arg) {
-                    console.log(arg)
+                    area_list(arg["area_data1"],arg["area_data2"]);
+                    signature_list(arg["remark_name_list"],arg["signature_list"])
                 }
             })
         }
         // 检查登录状态
         checkLogin();
+
+        function area_list(data1,data2){
+
+          // 基于准备好的dom，初始化echarts实例
+          var myChart = echarts.init(document.getElementById('areashow'));
+
+          // 指定图表的配置项和数据
+          var option = {
+            tooltip: {},
+            legend: {
+              data:['区域']
+            },
+            xAxis: {
+              data: data1
+            },
+            yAxis: {},
+            series: [{
+              name: '区域',
+              type: 'bar',
+              data: data2
+            }]
+          };
+
+          // 使用刚指定的配置项和数据显示图表。
+          myChart.setOption(option);
+        }
+        function signature_list(data1,data){
+
+          for(var i in data){
+            $(".signature").append("<div>"+i+" : "+data[i]+"</div>")
+          }
+          layui.use('carousel', function(){
+            var carousel = layui.carousel;
+            //建造实例
+            carousel.render({
+              elem: '#test1'
+              ,width: '100%' //设置容器宽度
+              ,arrow: 'always' //始终显示箭头
+              ,indicator:'none'
+              //,anim: 'updown' //切换动画方式
+            });
+          });
+        }
+
   </script>
 </body>
 </html>
