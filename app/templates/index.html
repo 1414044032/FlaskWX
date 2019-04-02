@@ -41,6 +41,9 @@
     text-align: center;
     line-height:280px;
   }
+  .sign {
+    padding-left: 10px;
+  }
 </style>
 <![endif]-->
 </head>
@@ -71,18 +74,17 @@
     <div class="layui-col-md9 wxfunc">
       <div class="layui-row">
         <div class="layui-col-md6 headwall">
-        头像墙
+          <div id="sexshow" style="width: 500px; height: 476px;"></div>
     </div>
       <div class="layui-col-md6 area">
-        地区分布
-        <div id="areashow" style="width: 553px; height: 476px;"></div>
+        <div id="areashow" style="width: 500px; height: 476px;"></div>
     </div>
       </div>
     </div>
   </div>
   <div class="layui-row">
       <div class="layui-col-md4 sign">
-        <h2>个性签名</h2>
+        <h2 style="text-align: center;">个性签名</h2>
         <div class="layui-carousel" id="test1">
               <div carousel-item class="signature">
               </div>
@@ -141,6 +143,7 @@
                 success:function (arg) {
                     area_list(arg["area_data1"],arg["area_data2"]);
                     signature_list(arg["remark_name_list"],arg["signature_list"])
+                    sex_list(arg["sex_data1"],arg["sex_data2"])
                 }
             })
         }
@@ -154,9 +157,20 @@
 
           // 指定图表的配置项和数据
           var option = {
+            title : {
+                text: '地区分布',
+                x:'center'
+            },
             tooltip: {},
             legend: {
+              x : 'left',
               data:['区域']
+            },
+            toolbox: {
+                show : true,
+                feature : {
+                    saveAsImage : {show: true}
+                }
             },
             xAxis: {
               data: data1
@@ -189,7 +203,57 @@
             });
           });
         }
+        function sex_list(legenddata,seriesdata) {
+          // 基于准备好的dom，初始化echarts实例
+          var myChart = echarts.init(document.getElementById('sexshow'));
+          var option = {
+            title : {
+                text: '性别比例',
+                x:'center'
+            },
+            tooltip : {
+                trigger: 'item',
+                formatter: "{a} <br/>{b} : {c} ({d}%)"
+            },
+            legend: {
+                orient : 'vertical',
+                x : 'left',
+                data:legenddata
+            },
+            toolbox: {
+                show : true,
+                feature : {
+                    mark : {show: true},
+                    magicType : {
+                        show: true,
+                        type: ['pie', 'funnel'],
+                        option: {
+                            funnel: {
+                                x: '25%',
+                                width: '50%',
+                                funnelAlign: 'left',
+                                max: 1548
+                            }
+                        }
+                    },
+                    saveAsImage : {show: true}
+                }
+            },
+            calculable : true,
+            series : [
+                {
+                    name:'性别比例',
+                    type:'pie',
+                    radius : '55%',
+                    center: ['50%', '60%'],
+                    data:seriesdata
+                }
+            ]
+        };
+            // 使用刚指定的配置项和数据显示图表。
+          myChart.setOption(option);
 
+        }
   </script>
 </body>
 </html>

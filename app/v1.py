@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import render_template, Blueprint, session, request, jsonify, redirect
+from flask import render_template, Blueprint, session, request, jsonify, redirect, url_for
 import time
 import requests
 import re
@@ -7,6 +7,11 @@ from bs4 import BeautifulSoup
 import json
 import collections
 wxchart = Blueprint('v1', __name__)
+
+
+
+
+
 
 
 @wxchart.route('')
@@ -107,7 +112,7 @@ def contact_all():
     r1 = requests.get(url, cookies=all_cookies)
     r1.encoding = r1.apparent_encoding
     contact_dict = json.loads(r1.content)
-
+    print(contact_dict)
     # 获取联系人过滤公众号
     remark_name_list = [item['RemarkName'] for item in contact_dict['MemberList'] if item['RemarkName']]
     # 获取地区列表
@@ -117,11 +122,20 @@ def contact_all():
     area_data2 = [i for i in area_dict.values()]
     # 个性签名列表
     signature_dict = {item['RemarkName']: item['Signature'] for item in contact_dict['MemberList'] if item['RemarkName'] and item['Signature']}
-
+    # 性别列表
+    sex_list = [item['Sex'] for item in contact_dict['MemberList'] if item['RemarkName'] and item['Sex']]
+    sex_dict = collections.Counter(sex_list)
+    print(sex_dict)
+    sex_dict["女"] = sex_dict.pop(2)
+    sex_dict["男"] = sex_dict.pop(1)
+    sex_data1 = [i for i in sex_dict.keys()]
+    sex_data2 = [{"value":v,"name": i} for i,v in sex_dict.items()]
     return jsonify({"remark_name_list": remark_name_list
                     ,"area_data1": area_data1
                     ,"area_data2": area_data2
-                    ,"signature_list": signature_dict})
+                    ,"signature_list": signature_dict
+                    ,"sex_data1":sex_data1
+                    ,"sex_data2":sex_data2})
 
 
 @wxchart.route('/send_msg')
