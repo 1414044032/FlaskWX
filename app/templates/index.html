@@ -44,6 +44,15 @@
   .sign {
     padding-left: 10px;
   }
+  .userimg{
+    width: 50px;
+    height: 50px;
+  }
+  .head_img_div{
+    width: 100%;
+    height: 280px;
+    overflow: auto;
+  }
 </style>
 <![endif]-->
 </head>
@@ -91,7 +100,10 @@
             </div>
     </div>
         <div class="layui-col-md4">
-        发送消息
+          <h2 style="text-align: center;">头像墙</h2>
+          <div class="head_img_div">
+
+          </div>
     </div>
     </div>
   <!--<div class="footer-wrap">
@@ -136,20 +148,32 @@
                 }
             })
         }
+        // 登录后加载各种图标
         function get_linkman() {
-            $.ajax({
+            layui.use('layer', function(){
+              var layer = layui.layer;
+              layer.load(1);
+              $.ajax({
                 url:'/wechat/contact_all',
                 type: 'GET',
                 success:function (arg) {
                     area_list(arg["area_data1"],arg["area_data2"]);
-                    signature_list(arg["remark_name_list"],arg["signature_list"])
-                    sex_list(arg["sex_data1"],arg["sex_data2"])
+                    signature_list(arg["remark_name_list"],arg["signature_list"]);
+                    sex_list(arg["sex_data1"],arg["sex_data2"]);
+                    show_head_img(arg["head_img_list"]);
+                },
+                error:function (data) {
+                  layer.msg('服务器端报错', function(){});
                 }
-            })
+            });
+              layer.closeAll('loading');
+            });
+
+
         }
         // 检查登录状态
         checkLogin();
-
+        // 区域列表
         function area_list(data1,data2){
 
           // 基于准备好的dom，初始化echarts实例
@@ -186,6 +210,7 @@
           // 使用刚指定的配置项和数据显示图表。
           myChart.setOption(option);
         }
+        // 个性签名
         function signature_list(data1,data){
 
           for(var i in data){
@@ -203,6 +228,7 @@
             });
           });
         }
+        // 性别比例
         function sex_list(legenddata,seriesdata) {
           // 基于准备好的dom，初始化echarts实例
           var myChart = echarts.init(document.getElementById('sexshow'));
@@ -253,6 +279,12 @@
             // 使用刚指定的配置项和数据显示图表。
           myChart.setOption(option);
 
+        }
+        // 头像墙
+        function show_head_img(head_list) {
+          for(var i= 0;i<head_list.length;i++){
+            $(".head_img_div").append('<img class="userimg"  src="data:image/jpg;base64,'+head_list[i]+'">')
+          }
         }
   </script>
 </body>

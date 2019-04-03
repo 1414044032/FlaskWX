@@ -6,12 +6,10 @@ import re
 from bs4 import BeautifulSoup
 import json
 import collections
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import base64
+from . import mongo
 wxchart = Blueprint('v1', __name__)
-
-
-
-
-
 
 
 @wxchart.route('')
@@ -21,7 +19,7 @@ def login():
     url = base_url.format(ctime)  # 字符串拼接，生成新的url
     response = requests.get(url)  # 向新的url发送get请求
     xcode_list = re.findall('window.QRLogin.uuid = "(.*)";',
-                            response.text)  # 通过正则表达式，提取到对于的参数列表['YZzTdz9m_A==', 'YZzTdz9m_A==']
+                            response.text)  #
     session['xcode'] = xcode_list[0]  # 获取到参数，存入session内
     return render_template('index.html', xcode=xcode_list[0])  # 返回给login页面此参数
 
@@ -98,7 +96,6 @@ def index():
 
 @wxchart.route('/contact_all')
 def contact_all():
-    # https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxgetcontact?pass_ticket=z%252BTVxEioLl3A5arKy%252BUMHbeTME%252BmAkJEulNYIYgGcpw%253D&r=1532421128264&seq=0&skey=@crypt_41bed7c6_e213390395ab3a4ef54bfef5d004f719
     base_url = 'https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxgetcontact?pass_ticket={0}&r={1}&seq=0&skey={2}'
     url = base_url.format(
         session['ticket_dict']['pass_ticket'],
@@ -112,17 +109,27 @@ def contact_all():
     r1 = requests.get(url, cookies=all_cookies)
     r1.encoding = r1.apparent_encoding
     contact_dict = json.loads(r1.content)
-    print(contact_dict)
-    # 获取联系人过滤公众号
+    mongo.db.flaskwx.insert_one(contact_dict)
+    # print(contact_dict)
+    # 获取联系人头像
+    head_img_list = ["https://wx.qq.com" + item['HeadImgUrl'] for item in contact_dict['MemberList'] if item['RemarkName']]
+    true_head_img_list = []
+    pool = ThreadPoolExecutor(max_workers=20)
+    tasks = [pool.submit(get_head_img, i, all_cookies) for i in head_img_list]
+    for future in as_completed(tasks):
+        true_head_img_list.append(base64.b64encode(future.result()).decode())
+    # 获取联系人(过滤到公众号，群聊)
     remark_name_list = [item['RemarkName'] for item in contact_dict['MemberList'] if item['RemarkName']]
-    # 获取地区列表
-    area_list = [item['Province'] for item in contact_dict['MemberList'] if item['RemarkName'] and item['Province']]
+    # 获取地区列表(过滤掉外国地区)
+    area_list = [item['Province'] for item in contact_dict['MemberList'] if item['RemarkName']
+                 and re.match("[\u4e00-\u9fa5]+", item['Province'])]
     area_dict = collections.Counter(area_list)
     area_data1 = [i for i in area_dict.keys()]
     area_data2 = [i for i in area_dict.values()]
-    # 个性签名列表
-    signature_dict = {item['RemarkName']: item['Signature'] for item in contact_dict['MemberList'] if item['RemarkName'] and item['Signature']}
-    # 性别列表
+    # 个性签名列表(联系人的个性签名)
+    signature_dict = {item['RemarkName']: item['Signature'] for item in contact_dict['MemberList'] if item['RemarkName']
+                      and item['Signature']}
+    # 性别列表(联系人的性别，1为男，2 为女)
     sex_list = [item['Sex'] for item in contact_dict['MemberList'] if item['RemarkName'] and item['Sex']]
     sex_dict = collections.Counter(sex_list)
     print(sex_dict)
@@ -134,8 +141,9 @@ def contact_all():
                     ,"area_data1": area_data1
                     ,"area_data2": area_data2
                     ,"signature_list": signature_dict
-                    ,"sex_data1":sex_data1
-                    ,"sex_data2":sex_data2})
+                    ,"sex_data1": sex_data1
+                    ,"sex_data2": sex_data2
+                    ,"head_img_list": true_head_img_list})
 
 
 @wxchart.route('/send_msg')
@@ -165,14 +173,24 @@ def send_msg():
     }
     all_cookies = {}
     all_cookies.update(session['login_cookie'])
-    all_cookies.update(session['ticket_cookie'])  # 带入cookie，试验过证明是需要的
+    all_cookies.update(session['ticket_cookie'])
     r1 = requests.post(
         url=url,
         data=bytes(json.dumps(form_data, ensure_ascii=False), encoding='utf-8'),
         cookies=all_cookies,
         headers={
-            'Content-Type': 'application/json'  # 这句话用来表示，需要序列化成json数据；也可以去掉data跟headers直接用json=form_data来实现
+            'Content-Type': 'application/json'
         }
     )
     print(r1.text)
     return '.....'
+
+
+# 发送获取图片请求
+def get_head_img(url, cookie):
+    try:
+        r1 = requests.get(url, cookies=cookie)
+        return r1.content
+    except Exception as e:
+        print(e)
+        return ''

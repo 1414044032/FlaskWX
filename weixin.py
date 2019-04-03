@@ -805,7 +805,7 @@ class WebWeixin(object):
                 raw_msg = {'raw_msg': msg}
                 self._showMsg(raw_msg)
                 if self.autoReplyMode:
-                    if "宿舍" in name or "1402" in name or "小号" in name:
+                    if "drivers" in name or "1402" in name or "小号" in name:
                         # 机器人代码
                         ans = self._tuling(content)
                         if self.webwxsendmsg(ans, msg['FromUserName']):
