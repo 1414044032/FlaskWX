@@ -5,29 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>Document</title>
   <link rel="stylesheet" type="text/css" href="/static/layui/css/layui.css">
-  <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+  <!--<link rel="stylesheet" type="text/css" href="/static/css/main.css">-->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/4.2.1/echarts-en.common.js"></script>
 <style>
   #xcode{
     border:5px solid #cccccc;
-    width: 200px;
-    height: 200px;
-    margin: 70px 0 0 70px;
+    width: 100px;
+    height: 100px;
   }
   .logoimg{
-    width: 100px;
-    height: 80px;
+    width: 83px;
+    height: 73px;
   }
-  .funczone{
-    height: 460px;
-  }
-  .wxstatus{
-    height: 80%;
-    border-right: 1px solid #cccccc;
+  .funczone0{
+    height: 10%;
+    padding-left: 50px;
     border-bottom: 1px solid #cccccc;
   }
+  .funczone{
+    height: 45%;
+  }
+  .funczone1{
+    border-top: 1px solid #cccccc;
+    height: 45%;
+  }
   .showstus{
-    padding: 20px 0 0 150px;
+    text-align:center;
+    padding-top: 10%;
     color: mediumblue;
   }
   /*个性签名居中*/
@@ -49,49 +53,45 @@
     height: 50px;
   }
   .head_img_div{
-    width: 100%;
+    width: 102%;
     height: 280px;
     overflow: auto;
   }
+  .layui-body{
+    left: 0px;
+  }
+  .layui-col-md4{
+    border-right: 1px solid #cccccc;
+    height: 100%;
+    padding: 5px 5px;
+  }
+  .wximg{
+    text-align:center;
+    padding-top: 20%;
+  }
 </style>
-<![endif]-->
 </head>
 <body>
-  <div class="header">
-    <div class="menu-btn">
-      <div class="menu"></div>
-    </div>
-    <h1 class="logo">
-      <a href="index.html">
-        <span>MYBLOG</span>
-        <img  class="logoimg" src="/static/img/logo1.png">
-      </a>
-    </h1>
-    <div class="nav">
-      <!--<a href="index.html" class="active">Flask微信</a>-->
-    </div>
-    <p class="welcome-text">
-      <!--<input type="file" id="file_input">-->
-    </p>
-  </div>
+  <div class="layui-body">
+  <div class="layui-row funczone0">
 
-  <div class="layui-row funczone">
-     <div class="layui-col-md3 wxstatus">
-       <div class="wximg"><img id="xcode"  src="https://login.weixin.qq.com/qrcode/{{ xcode }}"></div>
-       <div class="showstus"><h3>请扫码</h3></div>
-     </div>
-    <div class="layui-col-md9 wxfunc">
-      <div class="layui-row">
-        <div class="layui-col-md6 headwall">
-          <div id="sexshow" style="width: 500px; height: 476px;"></div>
-    </div>
-      <div class="layui-col-md6 area">
-        <div id="areashow" style="width: 500px; height: 476px;"></div>
-    </div>
-      </div>
-    </div>
+    <img  class="logoimg" src="/static/img/logo1.png">
   </div>
-  <div class="layui-row">
+  <div class="layui-row funczone">
+    <div class="layui-col-md4">
+          <div class="wximg"><img id="xcode"  src="https://login.weixin.qq.com/qrcode/{{ xcode }}"></div>
+       <div class="showstus"><h3>请扫码</h3></div>
+    </div>
+      <div class="layui-col-md4 headwall">
+          <h2 style="text-align: center;">性别比例</h2>
+          <div id="sexshow" style="width: 100%; height: 100%;"></div>
+    </div>
+      <div class="layui-col-md4 area">
+        <h2 style="text-align: center;">地区分布</h2>
+        <div id="areashow" style="width: 100%; height: 100%;"></div>
+    </div>
+    </div>
+  <div class="layui-row funczone1">
       <div class="layui-col-md4 sign">
         <h2 style="text-align: center;">个性签名</h2>
         <div class="layui-carousel" id="test1">
@@ -99,33 +99,40 @@
               </div>
             </div>
     </div>
-        <div class="layui-col-md4">
+      <div class="layui-col-md4">
           <h2 style="text-align: center;">头像墙</h2>
           <div class="head_img_div">
 
           </div>
     </div>
+      <div class="layui-col-md4">
+          <h2 style="text-align: center;">发送消息</h2>
+          <form  class="layui-form" action="/test" method="post">
+            <div class="layui-form-item">
+            <select class="msg_div" lay-filter="category" name="user" lay-verify="" lay-search>
+              <option value="">请选择一个联系人</option>
+            </select>
+          </div>
+            <div class="layui-form-item">
+            <textarea name="msg" required lay-verify="required" placeholder="请输入消息内容" class="layui-textarea"></textarea>
+          </div>
+            <div class="layui-form-item">
+            <button class="layui-btn" lay-submit lay-filter="sendmeg">发送消息</button>
+          </div>
+          </form>
     </div>
-  <!--<div class="footer-wrap">
-    <div class="footer w1000">
-      <div class="qrcode">
-        <img src="/static/img/erweima.jpg">
-      </div>
-      <div class="practice-mode">
-        <img src="/static/img/down_img.jpg">
-        <div class="text">
-          <h4 class="title">我的联系方式</h4>
-          <p>邮箱<span class="email">1414044032@qq.com</span></p>
-        </div>
-      </div>
     </div>
-  </div>-->
-
   <script type="text/javascript" src="/static/js/jquery-3.3.1.min.js"></script>
   <script type="text/javascript" src="/static/layui/layui.js"></script>
   <script>
-        // 登录标志
+        layui.use(['layer','form','carousel'], function(){
+          var layer = layui.layer;
+          var form = layui.form;
+          var carousel = layui.carousel;
+          // 登录标志
         var tip = 1;
+        // 发送消息选择用户值
+        var category = '';
         function checkLogin() {
             $.ajax({
                 url:'/wechat/check_login',
@@ -145,13 +152,18 @@
                         $(".showstus>h3").text("已登录");
                         get_linkman()
                     }
+                    // 新号禁止登陆的是，在腾讯那边
+                    else if (arg.code == 500){
+                        var layer = layui.layer;
+                        layer.alert('为了你的帐号安全，此微信号已不允许登录网页微信。你可以使用Windows微信或Mac微信在电脑端登录。' +
+                                'Windows微信下载地址：https://pc.weixin.qq.com ' +
+                                ' Mac微信下载地址：https://mac.weixin.qq.com\'', {icon: 5});
+                    }
                 }
             })
         }
         // 登录后加载各种图标
         function get_linkman() {
-            layui.use('layer', function(){
-              var layer = layui.layer;
               layer.load(1);
               $.ajax({
                 url:'/wechat/contact_all',
@@ -161,18 +173,30 @@
                     signature_list(arg["remark_name_list"],arg["signature_list"]);
                     sex_list(arg["sex_data1"],arg["sex_data2"]);
                     show_head_img(arg["head_img_list"]);
+                    show_send_msg_list(arg["user_dict"]);
+                    save_user_session();
                 },
                 error:function (data) {
                   layer.msg('服务器端报错', function(){});
                 }
             });
               layer.closeAll('loading');
-            });
-
-
         }
         // 检查登录状态
         checkLogin();
+        // 获取当前用户信息保存到session
+        function save_user_session() {
+          $.ajax({
+                url:'/wechat/index',
+                type: 'GET',
+                success:function (arg) {
+
+                },
+                error:function (data) {
+                  layer.msg('服务器端报错', function(){});
+                }
+            });
+        }
         // 区域列表
         function area_list(data1,data2){
 
@@ -197,7 +221,11 @@
                 }
             },
             xAxis: {
-              data: data1
+              data: data1,
+              axisLabel: {
+                interval:0,
+                rotate:45, //代表逆时针旋转45度
+            }
             },
             yAxis: {},
             series: [{
@@ -216,8 +244,6 @@
           for(var i in data){
             $(".signature").append("<div>"+i+" : "+data[i]+"</div>")
           }
-          layui.use('carousel', function(){
-            var carousel = layui.carousel;
             //建造实例
             carousel.render({
               elem: '#test1'
@@ -226,7 +252,6 @@
               ,indicator:'none'
               //,anim: 'updown' //切换动画方式
             });
-          });
         }
         // 性别比例
         function sex_list(legenddata,seriesdata) {
@@ -283,9 +308,44 @@
         // 头像墙
         function show_head_img(head_list) {
           for(var i= 0;i<head_list.length;i++){
-            $(".head_img_div").append('<img class="userimg"  src="data:image/jpg;base64,'+head_list[i]+'">')
+            $(".head_img_div").append('<img class="userimg"  src="'+head_list[i]+'">')
           }
         }
+        // 发送消息填充
+        function show_send_msg_list(users){
+          for(var i in users){
+            $(".msg_div").append('<option value="'+users[i]+'">'+i+'</option>');
+          }
+          form.render();
+          form.on('select(category)', function (data) {
+                category = data.value;
+            });
+          form.on('submit(sendmeg)', function(data){
+            console.log(data.elem); //被执行事件的元素DOM对象，一般为button对象
+            console.log(data.form); //被执行提交的form对象，一般在存在form标签时才会返回
+            console.log(data.field);//当前容器的全部表单字段，名值对形式：{name: value}
+           $.ajax({
+                  type: 'POST',
+                  url: '/wechat/send_msg',
+                  data: data.field,
+                  success: function (data) {
+                        if(data["ok"] == 0){
+                            layer.msg('发送成功', {icon: 6});
+                        }
+                        else{
+                            layer.msg('发送失败', {icon: 5});
+                        }
+                  },
+                  error:function (data) {
+                        layer.msg('服务器无响应', {icon: 5});
+                  }
+                });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+          });
+        }
+        });
+
   </script>
+  </div>
 </body>
 </html>

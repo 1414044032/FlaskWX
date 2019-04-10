@@ -6,13 +6,17 @@ import re
 from bs4 import BeautifulSoup
 import json
 import collections
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import base64
+from io import BytesIO
 from . import mongo
-wxchart = Blueprint('v1', __name__)
+from PIL import Image
+import os
+wxchat = Blueprint('v1', __name__)
 
 
-@wxchart.route('')
+@wxchat.route('')
 def login():
     ctime = time.time() * 1000  # 模拟一个相同的时间戳
     base_url = 'https://login.wx.qq.com/jslogin?appid=wx782c26e4c19acffb&redirect_uri=https%3A%2F%2Fwx.qq.com%2Fcgi-bin%2Fmmwebwx-bin%2Fwebwxnewloginpage&fun=new&lang=zh_CN&_={0}'
@@ -24,7 +28,7 @@ def login():
     return render_template('index.html', xcode=xcode_list[0])  # 返回给login页面此参数
 
 
-@wxchart.route('/check_login')
+@wxchat.route('/check_login')
 def check_login():
     tip = request.args.get('tip')  # 标记是否扫码
     # 自定义返回的json数据格式
@@ -54,14 +58,20 @@ def check_login():
         soup = BeautifulSoup(r2.text, 'html.parser')  # 标签文本实例化bs对象
         for item in soup.find(name='error').children:  # 找到需要的凭证
             ticket_dict[item.name] = item.text  # 凭证存入字典
+        # 有些微信安全性过低，或者新号，无法登陆网页版微信
+        if ticket_dict['message']:
+            ret['code'] = 500
+            session['is_login'] = False
+            return jsonify(ret)
         session['ticket_dict'] = ticket_dict  # 凭证存入session
+        print(ticket_dict)
         session['ticket_cookie'] = r2.cookies.get_dict()  # session中存入获取重定向的cookie
         ret['code'] = 200  # 200表示确定登陆了
         session['is_login'] = True  # 给后面的url判断是否登陆
     return jsonify(ret)  # Json序列化返回
 
 
-@wxchart.route('/index')
+@wxchat.route('/index')
 def index():
     # 判断是否已经登陆
     if not session.get('is_login'):
@@ -88,13 +98,12 @@ def index():
     )
     r1.encoding = r1.apparent_encoding  # 使用默认编码原则
     user_info = json.loads(r1.content)
-    for key in user_info:
-        print(key)
+    print(user_info['User'])
     session['current_user_info'] = user_info['User']
-    return render_template('index1.html', user_info = user_info)
+    return 'success'
 
 
-@wxchart.route('/contact_all')
+@wxchat.route('/contact_all')
 def contact_all():
     base_url = 'https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxgetcontact?pass_ticket={0}&r={1}&seq=0&skey={2}'
     url = base_url.format(
@@ -112,12 +121,12 @@ def contact_all():
     mongo.db.flaskwx.insert_one(contact_dict)
     # print(contact_dict)
     # 获取联系人头像
-    head_img_list = ["https://wx.qq.com" + item['HeadImgUrl'] for item in contact_dict['MemberList'] if item['RemarkName']]
+    head_img_list = [["https://wx.qq.com" + item['HeadImgUrl'], item['UserName']] for item in contact_dict['MemberList'] if item['RemarkName']]
     true_head_img_list = []
     pool = ThreadPoolExecutor(max_workers=20)
     tasks = [pool.submit(get_head_img, i, all_cookies) for i in head_img_list]
     for future in as_completed(tasks):
-        true_head_img_list.append(base64.b64encode(future.result()).decode())
+        true_head_img_list.append(future.result())
     # 获取联系人(过滤到公众号，群聊)
     remark_name_list = [item['RemarkName'] for item in contact_dict['MemberList'] if item['RemarkName']]
     # 获取地区列表(过滤掉外国地区)
@@ -132,65 +141,85 @@ def contact_all():
     # 性别列表(联系人的性别，1为男，2 为女)
     sex_list = [item['Sex'] for item in contact_dict['MemberList'] if item['RemarkName'] and item['Sex']]
     sex_dict = collections.Counter(sex_list)
-    print(sex_dict)
     sex_dict["女"] = sex_dict.pop(2)
     sex_dict["男"] = sex_dict.pop(1)
     sex_data1 = [i for i in sex_dict.keys()]
     sex_data2 = [{"value":v,"name": i} for i,v in sex_dict.items()]
+    user_dict = {item['NickName'] + " - " + item['RemarkName']: item['UserName'] for item in contact_dict['MemberList']}
+
     return jsonify({"remark_name_list": remark_name_list
                     ,"area_data1": area_data1
                     ,"area_data2": area_data2
                     ,"signature_list": signature_dict
                     ,"sex_data1": sex_data1
                     ,"sex_data2": sex_data2
-                    ,"head_img_list": true_head_img_list})
+                    ,"head_img_list": true_head_img_list
+                    ,"user_dict": user_dict})
 
 
-@wxchart.route('/send_msg')
+@wxchat.route('/send_msg', methods=['POST'])
 def send_msg():
-    recv = request.args.get('recv')
-    content = request.args.get('content')
-    # https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsendmsg?pass_ticket=wtwzy%252F7fxQgJaTA511weqPXIkIGSJmZdCRATgZdIfYY%253D
-    base_url = 'https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsendmsg?pass_ticket={0}'
-    url = base_url.format(session['ticket_dict']['pass_ticket'])
-    ctime = time.time() * 1000
-    form_data = {  # 伪造数据格式
-        'BaseRequest': {
-            'DeviceID': "e939509344931677",
-            'Sid': session['ticket_dict']['wxsid'],
-            'Skey': session['ticket_dict']['skey'],
-            'Uin': session['ticket_dict']['wxuin']
-        },
-        'Msg': {
-            'ClientMsgId': ctime,
-            'Content': content,
-            'FromUserName': session['current_user_info']['UserName'],
-            'LocalID': ctime,
-            'ToUserName': recv,
-            'Type': 1,  # 文本
-        },
-        'Scene': 0
-    }
-    all_cookies = {}
-    all_cookies.update(session['login_cookie'])
-    all_cookies.update(session['ticket_cookie'])
-    r1 = requests.post(
-        url=url,
-        data=bytes(json.dumps(form_data, ensure_ascii=False), encoding='utf-8'),
-        cookies=all_cookies,
-        headers={
-            'Content-Type': 'application/json'
-        }
-    )
-    print(r1.text)
-    return '.....'
-
-
-# 发送获取图片请求
-def get_head_img(url, cookie):
+    # 获取当前用户信息失败的情况下是无法发送消息的
     try:
-        r1 = requests.get(url, cookies=cookie)
-        return r1.content
+        if session['current_user_info']:
+            recv = request.form['user']
+            content = request.form['msg']
+            # https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsendmsg?pass_ticket=wtwzy%252F7fxQgJaTA511weqPXIkIGSJmZdCRATgZdIfYY%253D
+            base_url = 'https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxsendmsg?pass_ticket={0}'
+            url = base_url.format(session['ticket_dict']['pass_ticket'])
+            ctime = time.time() * 1000
+            form_data = {  # 伪造数据格式
+                'BaseRequest': {
+                    'DeviceID': "e939509344931677",
+                    'Sid': session['ticket_dict']['wxsid'],
+                    'Skey': session['ticket_dict']['skey'],
+                    'Uin': session['ticket_dict']['wxuin']
+                },
+                'Msg': {
+                    'ClientMsgId': ctime,
+                    'Content': content,
+                    'FromUserName': session['current_user_info']['UserName'],
+                    'LocalID': ctime,
+                    'ToUserName': recv,
+                    'Type': 1,  # 文本
+                },
+                'Scene': 0
+            }
+            all_cookies = {}
+            all_cookies.update(session['login_cookie'])
+            all_cookies.update(session['ticket_cookie'])
+            r1 = requests.post(
+                url=url,
+                data=bytes(json.dumps(form_data, ensure_ascii=False), encoding='utf-8'),
+                cookies=all_cookies,
+                headers={
+                    'Content-Type': 'application/json'
+                }
+            )
+            # 发送消息响应
+            msg_result = json.loads(r1.text)
+            if msg_result['BaseResponse']['Ret'] == 0:
+                return jsonify({'ok': 0})
+            else:
+                return jsonify({'ok': 1})
     except Exception as e:
         print(e)
+        return jsonify({'ok': 1})
+
+
+# 发送获取图片请求//(如果存在则直接返回图片)
+def get_head_img(url, cookie):
+    try:
+        img_save_path = os.path.join(os.path.dirname(__file__), "static\\headimg", url[1] + ".jpg")
+        return_img = "/static/headimg/"+url[1]+".jpg"
+        if os.path.exists(img_save_path):
+            return return_img
+        else:
+            r1 = requests.get(url[0], cookies=cookie)
+            im = Image.open(BytesIO(r1.content))
+            im.save(img_save_path)
+            return "/static/headimg/"+url[1]+".jpg"
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
         return ''

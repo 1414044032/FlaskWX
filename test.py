@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import collections
-import re
+import time
 
-print(re.match("[\u4e00-\u9fa5]+",""))
+print(time.time())
+# 661646548
+# 1554368720

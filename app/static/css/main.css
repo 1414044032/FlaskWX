@@ -11,9 +11,9 @@
 
 
 
-body{font: 14px 宋体 Helvetica Neue,Helvetica,PingFang SC,Tahoma,Arial,sans-serif; overflow-x: hidden;}
+/*body{font: 14px 宋体 Helvetica Neue,Helvetica,PingFang SC,Tahoma,Arial,sans-serif; overflow-x: hidden;height: 100%}*/
 .w1000{max-width: 1000px!important; margin:0 auto;}
-.header{height: 80px; line-height: 80px; position: relative; font-size: 16px;border-bottom: 1px solid #cccccc;}
+.header{height: 10%; line-height: 80px; position: relative; font-size: 16px;border-bottom: 1px solid #cccccc;}
 .header .logo,.header .welcome-text,.header .nav{position: absolute; top: 0;}
 .header .logo{left: 105px;}
 .header .logo span{display: none;}
