@@ -135,6 +135,9 @@ def contact_all():
     area_dict = collections.Counter(area_list)
     area_data1 = [i for i in area_dict.keys()]
     area_data2 = [i for i in area_dict.values()]
+    # 地图数据
+    area_data_map1 = [min(area_data2), max(area_data2)]
+    area_data_map2 = [{"name": i, "value": v} for i, v in area_dict.items()]
     # 个性签名列表(联系人的个性签名)
     signature_dict = {item['RemarkName']: item['Signature'] for item in contact_dict['MemberList'] if item['RemarkName']
                       and item['Signature']}
@@ -150,6 +153,8 @@ def contact_all():
     return jsonify({"remark_name_list": remark_name_list
                     ,"area_data1": area_data1
                     ,"area_data2": area_data2
+                    ,"area_data_map1": area_data_map1
+                    ,"area_data_map2": area_data_map2
                     ,"signature_list": signature_dict
                     ,"sex_data1": sex_data1
                     ,"sex_data2": sex_data2
