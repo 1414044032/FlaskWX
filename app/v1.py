@@ -10,7 +10,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import base64
 from io import BytesIO
-from . import mongo
+# from . import mongo
 from PIL import Image
 import os
 wxchat = Blueprint('v1', __name__)
@@ -25,6 +25,7 @@ def login():
     xcode_list = re.findall('window.QRLogin.uuid = "(.*)";',
                             response.text)  #
     session['xcode'] = xcode_list[0]  # 获取到参数，存入session内
+    # index.html 原版  index1.html 是以后要开发的版本，对功能进行分块细化
     return render_template('index.html', xcode=xcode_list[0])  # 返回给login页面此参数
 
 
@@ -100,66 +101,74 @@ def index():
     user_info = json.loads(r1.content)
     print(user_info['User'])
     session['current_user_info'] = user_info['User']
-    return 'success'
+    user_dict = {
+        "nickname":user_info['User'].get("NickName"),
+        "sex":user_info['User'].get("Sex"),
+        "Signature":user_info['User'].get("Signature")
+    }
+    return jsonify(user_dict)
 
 
 @wxchat.route('/contact_all')
 def contact_all():
-    base_url = 'https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxgetcontact?pass_ticket={0}&r={1}&seq=0&skey={2}'
-    url = base_url.format(
-        session['ticket_dict']['pass_ticket'],
-        time.time() * 1000,
-        session['ticket_dict']['skey'],
-    )  # url拼接
-    all_cookies = {}
-    all_cookies.update(session['login_cookie'])
-    all_cookies.update(session['ticket_cookie'])  # 带入所有的cookies
-
-    r1 = requests.get(url, cookies=all_cookies)
-    r1.encoding = r1.apparent_encoding
-    contact_dict = json.loads(r1.content)
-    mongo.db.flaskwx.insert_one(contact_dict)
-    # print(contact_dict)
-    # 获取联系人头像
-    head_img_list = [["https://wx.qq.com" + item['HeadImgUrl'], item['UserName']] for item in contact_dict['MemberList'] if item['RemarkName']]
-    true_head_img_list = []
-    pool = ThreadPoolExecutor(max_workers=20)
-    tasks = [pool.submit(get_head_img, i, all_cookies) for i in head_img_list]
-    for future in as_completed(tasks):
-        true_head_img_list.append(future.result())
-    # 获取联系人(过滤到公众号，群聊)
-    remark_name_list = [item['RemarkName'] for item in contact_dict['MemberList'] if item['RemarkName']]
-    # 获取地区列表(过滤掉外国地区)
-    area_list = [item['Province'] for item in contact_dict['MemberList'] if item['RemarkName']
-                 and re.match("[\u4e00-\u9fa5]+", item['Province'])]
-    area_dict = collections.Counter(area_list)
-    area_data1 = [i for i in area_dict.keys()]
-    area_data2 = [i for i in area_dict.values()]
-    # 地图数据
-    area_data_map1 = [min(area_data2), max(area_data2)]
-    area_data_map2 = [{"name": i, "value": v} for i, v in area_dict.items()]
-    # 个性签名列表(联系人的个性签名)
-    signature_dict = {item['RemarkName']: item['Signature'] for item in contact_dict['MemberList'] if item['RemarkName']
-                      and item['Signature']}
-    # 性别列表(联系人的性别，1为男，2 为女)
-    sex_list = [item['Sex'] for item in contact_dict['MemberList'] if item['RemarkName'] and item['Sex']]
-    sex_dict = collections.Counter(sex_list)
-    sex_dict["女"] = sex_dict.pop(2)
-    sex_dict["男"] = sex_dict.pop(1)
-    sex_data1 = [i for i in sex_dict.keys()]
-    sex_data2 = [{"value":v,"name": i} for i,v in sex_dict.items()]
-    user_dict = {item['NickName'] + " - " + item['RemarkName']: item['UserName'] for item in contact_dict['MemberList']}
-
-    return jsonify({"remark_name_list": remark_name_list
-                    ,"area_data1": area_data1
-                    ,"area_data2": area_data2
-                    ,"area_data_map1": area_data_map1
-                    ,"area_data_map2": area_data_map2
-                    ,"signature_list": signature_dict
-                    ,"sex_data1": sex_data1
-                    ,"sex_data2": sex_data2
-                    ,"head_img_list": true_head_img_list
-                    ,"user_dict": user_dict})
+    try:
+        base_url = 'https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxgetcontact?pass_ticket={0}&r={1}&seq=0&skey={2}'
+        url = base_url.format(
+            session['ticket_dict']['pass_ticket'],
+            time.time() * 1000,
+            session['ticket_dict']['skey'],
+        )  # url拼接
+        all_cookies = {}
+        all_cookies.update(session['login_cookie'])
+        all_cookies.update(session['ticket_cookie'])  # 带入所有的cookies
+        r1 = requests.get(url, cookies=all_cookies)
+        r1.encoding = r1.apparent_encoding
+        contact_dict = json.loads(r1.content)
+        # mongo.db.flaskwx.insert_one(contact_dict)
+        print(contact_dict)
+        # 获取联系人头像
+        head_img_list = [["https://wx.qq.com" + item['HeadImgUrl'], item['UserName']] for item in contact_dict['MemberList'] if item['RemarkName']]
+        true_head_img_list = []
+        pool = ThreadPoolExecutor(max_workers=20)
+        tasks = [pool.submit(get_head_img, i, all_cookies) for i in head_img_list]
+        for future in as_completed(tasks):
+            true_head_img_list.append(future.result())
+        # 获取联系人(过滤到公众号，群聊)
+        remark_name_list = [item['RemarkName'] for item in contact_dict['MemberList'] if item['AttrStatus']]
+        # 获取地区列表(过滤掉外国地区)
+        area_list = [item['Province'] for item in contact_dict['MemberList'] if item['AttrStatus']
+                     and re.match("[\u4e00-\u9fa5]+", item['Province'])]
+        area_dict = collections.Counter(area_list)
+        area_data1 = [i for i in area_dict.keys()]
+        area_data2 = [i for i in area_dict.values()]
+        # 地图数据
+        area_data_map1 = [min(area_data2), max(area_data2)]
+        area_data_map2 = [{"name": i, "value": v} for i, v in area_dict.items()]
+        # 个性签名列表(联系人的个性签名)
+        signature_dict = {item['NickName'] + "-" + item['RemarkName']: item['Signature'] for item in contact_dict['MemberList']
+                          if item['AttrStatus']}
+        # 性别列表(联系人的性别，1为男，2 为女)
+        sex_list = [item['Sex'] for item in contact_dict['MemberList'] if item['AttrStatus'] and item['Sex']]
+        sex_dict = collections.Counter(sex_list)
+        sex_dict["女"] = sex_dict.pop(2)
+        sex_dict["男"] = sex_dict.pop(1)
+        sex_data1 = [i for i in sex_dict.keys()]
+        sex_data2 = [{"value": v, "name": i} for i, v in sex_dict.items()]
+        user_dict = {item['NickName'] + " - " + item['RemarkName']: item['UserName'] for item in contact_dict['MemberList']}
+        return jsonify({"remark_name_list": remark_name_list
+                        ,"area_data1": area_data1
+                        ,"area_data2": area_data2
+                        ,"area_data_map1": area_data_map1
+                        ,"area_data_map2": area_data_map2
+                        ,"signature_list": signature_dict
+                        ,"sex_data1": sex_data1
+                        ,"sex_data2": sex_data2
+                        ,"head_img_list": true_head_img_list
+                        ,"user_dict": user_dict})
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+        return ""
 
 
 @wxchat.route('/send_msg', methods=['POST'])

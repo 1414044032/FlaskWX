@@ -12,7 +12,7 @@ def redict():
 @app.route('/test')
 def test():
 
-    return render_template('test.html')
+    return render_template('index1.html')
 
 
 app.register_blueprint(wxchat, url_prefix='/wechat')

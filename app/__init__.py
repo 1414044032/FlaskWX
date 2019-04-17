@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask import Flask
-from flask_pymongo import PyMongo
+# from flask_pymongo import PyMongo
 import logging
 app = Flask(__name__)
 # 日志系统配置
@@ -15,6 +15,6 @@ app.config.from_object('app.setting')
 
 app.config["MONGO_URI"] = "mongodb://localhost:27017/wangliuqi"
 
-mongo = PyMongo(app)
+# mongo = PyMongo(app)
 from . import views
 

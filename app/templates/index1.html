@@ -2,27 +2,426 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="/static/layui/css/layui.css">
+    <script src="https://cdn.bootcss.com/echarts/4.2.1-rc1/echarts-en.min.js"></script>
+    <script type="text/javascript" src="/static/js/china.js"></script>
+    <style>
+        #xcode{
+            width: 150px;
+            height: 150px;
+            border: 5px solid #cccccc;
+        }
+        .wximg{
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+        }
+        .layui-body {
+            left: 0px;
+        }
+
+        .contentbody {
+            height: 90%;
+        }
+
+        .navtreebody, .templatebody, .template, .layui-nav-tree, .layui-card{
+            height: 100%;
+        }
+        .layui-card-header{
+            height: 10%;
+        }
+        .layui-card-body{
+            height: 90%;
+        }
+        .panldiv {
+            height: 50%;
+        }
+        .layui-card-header{
+            font-size: 26px;
+            color: #407;
+        }
+        /*.showstus,.selfnick,.selfsex,.selfsign{
+            text-align: center;
+            font-size: 15px;
+            color: burlywood;
+        }*/
+    </style>
 </head>
 <body>
-    <h1>个人信息：{{ user_info.User.NickName }}</h1>
-    <ul>
-        {% for user in user_info.ContactList %}
-            <li>{{ user.NickName }}</li>
-        {% endfor %}
-    </ul>
-    <a href="/wechat/contact_all">查看更多联系人</a>
-    <h3>公众号信息</h3>
-    {% for msg in user_info.MPSubscribeMsgList %}
-    <div>
-        <h3>{{ msg.NickName }}</h3>
-        <ul>
-            {% for article in msg.MPArticleList %}
-                <li><a href="{{ article.Url }}">{{ article.Title }}</a></li>
-            {% endfor %}
+<div class="layui-body">
+    <div class="layui-row hearder">
+        <ul class="layui-nav">
+            <li class="layui-nav-item">
+                <a href=""><img src="/static/img/logo1.png" class="layui-nav-img">FlaskWX</a>
+            </li>
         </ul>
     </div>
-    {% endfor %}
-</body>
+    <div class="layui-row contentbody">
+        <div class="layui-col-md2 navtreebody">
+            <ul class="layui-nav layui-nav-tree" lay-filter="test">
+                <li class="layui-nav-item layui-nav-itemed">
+                    <a href="javascript:;">首页</a>
+                </li>
+                <li class="layui-nav-item">
+                    <a href="javascript:;">好友数据</a>
+                </li>
+                <li class="layui-nav-item"><a href="javascript:;">群聊数据</a></li>
+                <li class="layui-nav-item"><a href="javascript:;">关联数据</a></li>
+            </ul>
+        </div>
+        <div class="layui-col-md10 templatebody">
+            <div class="layui-row panldiv">
+                <div class="layui-col-md6 template">
+                    <div class="layui-card">
+                        <div class="layui-card-header">登录</div>
+                        <div class="layui-card-body">
+                            <div class="wximg"><img id="xcode" src="https://login.weixin.qq.com/qrcode/{{ xcode }}">
+                            </div>
+                            <div>
+                                <div class="layui-row"><div class="layui-col-md6">二维码状态:</div><div class="layui-col-md6 showstus"></div></div>
+                                <div class="layui-row"><div class="layui-col-md6">昵称:</div><div class="layui-col-md6 selfnick"></div></div>
+                                <div class="layui-row"><div class="layui-col-md6">性别:</div><div class="layui-col-md6 selfsex"></div></div>
+                                <div class="layui-row"><div class="layui-col-md6">个性签名:</div><div class="layui-col-md6 selfsign"></div></div>
 
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-md6 template">
+                    <div class="layui-card">
+                        <div class="layui-card-header">性别比例</div>
+                        <div class="layui-card-body">
+                            <div id="sexshow" style="width: 100%; height: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-row panldiv">
+                <div class="layui-col-md6 template">
+                    <div class="layui-card">
+                        <div class="layui-card-header">地区分布</div>
+                        <div class="layui-card-body">
+                            <div id="areashow" style="width: 100%; height: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-md6 template">
+                    <div class="layui-card">
+                        <div class="layui-card-header">地域分布</div>
+                        <div class="layui-card-body">
+                            <div id="areashow1" class="chinaMap" style="width: 100%; height: 100%;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="/static/js/jquery-3.3.1.min.js"></script>
+<script type="text/javascript" src="/static/layui/layui.js"></script>
+<script type="text/javascript">
+    layui.use(['layer','form','carousel'], function(){
+          var layer = layui.layer;
+          var form = layui.form;
+          var carousel = layui.carousel;
+          // 登录标志
+        var tip = 1;
+        var circulation = 1;
+        // 发送消息选择用户值
+        var category = '';
+        function checkLogin() {
+            circulation = circulation +1;
+            if (circulation>5){
+                layer.alert('二维码已过期请重新扫码', {icon: 5});
+                return
+            }
+            $.ajax({
+                url:'/wechat/check_login',
+                data: {'tip': tip},
+                type: 'GET',
+                dataType: 'JSON',
+                success:function (arg) {
+                    if (arg.code == 201){
+                        // 有人扫码了
+                        $('#xcode').attr('src', arg.data);
+                        $(".showstus").text("已扫码");
+                        checkLogin();
+                        tip = 0;
+                    }else if (arg.code == 408){
+                        checkLogin();
+                    }else if (arg.code == 200){
+                        $(".showstus").text("已登录");
+                        get_linkman()
+                    }
+                    // 新号禁止登陆的是，在腾讯那边
+                    else if (arg.code == 500){
+                        var layer = layui.layer;
+                        layer.alert('为了你的帐号安全，此微信号已不允许登录网页微信。你可以使用Windows微信或Mac微信在电脑端登录。' +
+                                'Windows微信下载地址：https://pc.weixin.qq.com ' +
+                                ' Mac微信下载地址：https://mac.weixin.qq.com\'', {icon: 5});
+                    }
+                }
+            })
+        }
+        // 登录后加载各种图标
+        function get_linkman() {
+              layer.load(1);
+              $.ajax({
+                url:'/wechat/contact_all',
+                type: 'GET',
+                success:function (arg) {
+                    area_list(arg["area_data1"],arg["area_data2"]);
+                    // signature_list(arg["remark_name_list"],arg["signature_list"]);
+                    console.log(arg["sex_data1"])
+                    console.log(arg["sex_data2"])
+                    sex_list(arg["sex_data1"],arg["sex_data2"]);
+                    // show_head_img(arg["head_img_list"]);
+                    // show_send_msg_list(arg["user_dict"]);
+                    show_area_map(arg["area_data_map1"],arg["area_data_map2"]);
+                    save_user_session();
+                },
+                error:function (data) {
+                  layer.msg('服务器端报错', function(){});
+                }
+            });
+              layer.closeAll('loading');
+        }
+        // 检查登录状态
+        checkLogin();
+        // 获取当前用户信息保存到session
+        function save_user_session() {
+          $.ajax({
+                url:'/wechat/index',
+                type: 'GET',
+                success:function (arg) {
+                    $(".selfnick").append(arg["nickname"]);
+                    $(".selfsex").append(arg["sex"]);
+                    $(".selfsign").append(arg["Signature"]);
+                },
+                error:function (data) {
+                  layer.msg('服务器端报错', function(){});
+                }
+            });
+        }
+        // 区域列表
+        function area_list(data1,data2){
+
+          // 基于准备好的dom，初始化echarts实例
+          var myChart = echarts.init(document.getElementById('areashow'));
+
+          // 指定图表的配置项和数据
+          var option = {
+            title : {
+                text: '地区分布',
+                x:'center'
+            },
+            tooltip: {},
+            legend: {
+              x : 'left',
+              data:['区域']
+            },
+            toolbox: {
+                show : true,
+                feature : {
+                    saveAsImage : {show: true}
+                }
+            },
+            xAxis: {
+              data: data1,
+              axisLabel: {
+                interval:0,
+                rotate:45, //代表逆时针旋转45度
+            }
+            },
+            yAxis: {},
+            series: [{
+              name: '区域',
+              type: 'bar',
+              data: data2
+            }]
+          };
+
+          // 使用刚指定的配置项和数据显示图表。
+          myChart.setOption(option);
+        }
+        // 个性签名
+        function signature_list(data1,data){
+
+          for(var i in data){
+            $(".signature").append("<div>"+i+" : "+data[i]+"</div>")
+          }
+            //建造实例
+            carousel.render({
+              elem: '#test1'
+              ,width: '100%' //设置容器宽度
+              ,arrow: 'always' //始终显示箭头
+              ,indicator:'none'
+              //,anim: 'updown' //切换动画方式
+            });
+        }
+        // 性别比例
+        function sex_list(legenddata,seriesdata) {
+          // 基于准备好的dom，初始化echarts实例
+          var myChart = echarts.init(document.getElementById('sexshow'));
+          var option = {
+            title : {
+                text: '性别比例',
+                x:'center'
+            },
+            tooltip : {
+                trigger: 'item',
+                formatter: "{a} <br/>{b} : {c} ({d}%)"
+            },
+            legend: {
+                orient : 'vertical',
+                x : 'left',
+                data:legenddata
+            },
+            toolbox: {
+                show : true,
+                feature : {
+                    mark : {show: true},
+                    magicType : {
+                        show: true,
+                        type: ['pie', 'funnel'],
+                        option: {
+                            funnel: {
+                                x: '25%',
+                                width: '50%',
+                                funnelAlign: 'left',
+                                max: 1548
+                            }
+                        }
+                    },
+                    saveAsImage : {show: true}
+                }
+            },
+            calculable : true,
+            series : [
+                {
+                    name:'性别比例',
+                    type:'pie',
+                    radius : '55%',
+                    center: ['50%', '60%'],
+                    data:seriesdata
+                }
+            ]
+        };
+            // 使用刚指定的配置项和数据显示图表。
+          myChart.setOption(option);
+
+        }
+        // 头像墙
+        function show_head_img(head_list) {
+          for(var i= 0;i<head_list.length;i++){
+            $(".head_img_div").append('<img class="userimg"  src="'+head_list[i]+'">')
+          }
+        }
+        // 发送消息填充
+        function show_send_msg_list(users){
+          for(var i in users){
+            $(".msg_div").append('<option value="'+users[i]+'">'+i+'</option>');
+          }
+          form.render();
+          form.on('select(category)', function (data) {
+                category = data.value;
+            });
+          form.on('submit(sendmeg)', function(data){
+            console.log(data.elem); //被执行事件的元素DOM对象，一般为button对象
+            console.log(data.form); //被执行提交的form对象，一般在存在form标签时才会返回
+            console.log(data.field);//当前容器的全部表单字段，名值对形式：{name: value}
+           $.ajax({
+                  type: 'POST',
+                  url: '/wechat/send_msg',
+                  data: data.field,
+                  success: function (data) {
+                        if(data["ok"] == 0){
+                            layer.msg('发送成功', {icon: 6});
+                        }
+                        else{
+                            layer.msg('发送失败', {icon: 5});
+                        }
+                  },
+                  error:function (data) {
+                        layer.msg('服务器无响应', {icon: 5});
+                  }
+                });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+          });
+        }
+        // 中国地图(地域分布)
+        function show_area_map(mapdata1, mapdata2) {
+            var optionMap = {
+                backgroundColor: '#FFFFFF',
+                title: {
+                    text: '地区分布',
+                    subtext: '',
+                    x:'center'
+                },
+                tooltip : {
+                    trigger: 'item'
+                },
+                toolbox: {
+                show : true,
+                feature : {
+                    mark : {show: true},
+                    magicType : {
+                        show: true,
+                        type: ['pie', 'funnel'],
+                        option: {
+                            funnel: {
+                                x: '25%',
+                                width: '50%',
+                                funnelAlign: 'left',
+                                max: 1548
+                            }
+                        }
+                    },
+                    saveAsImage : {show: true}
+                }
+            },
+                //左侧小导航图标
+                visualMap: {
+                    show : true,
+                    min: mapdata1[0],
+                    max: mapdata1[1],
+                    x: 'left',
+                    y: 'center',
+                    realtime: false,
+                    inRange: {
+                        color: ['lightskyblue','yellow', 'orangered']
+                    }
+                },
+
+                //配置属性
+                series: [{
+                    name: '数据',
+                    type: 'map',
+                    mapType: 'china',
+                    roam: true,
+                    label: {
+                        normal: {
+                            show: true  //省份名称
+                        },
+                        emphasis: {
+                            show: false
+                        }
+                    },
+                    data:mapdata2  //数据
+                }]
+            };
+        //初始化echarts实例
+        var myChart = echarts.init(document.getElementById('areashow1'));
+
+        //使用制定的配置项和数据显示图表
+        myChart.setOption(optionMap);
+        }
+        });
+
+</script>
+</div>
+</body>
 </html>
